@@ -79,7 +79,11 @@ class WifiUtil():
         """Connect to the specified AP."""
 
         iface = self._get_interface(obj['name'])
-        raw_networks = iface.cachedScanResults()
+        if iface is not None:
+            raw_networks = iface.cachedScanResults()
+        else:
+            raw_networks = []
+
 
         for raw_network in raw_networks:
             if raw_network.ssid() == network.ssid:
@@ -90,23 +94,25 @@ class WifiUtil():
         """Disconnect to the specified AP."""
 
         iface = self._get_interface(obj['name'])
-        iface.disassociate()
+        if iface is not None:
+            iface.disassociate()
 
     def add_network_profile(self, obj, params):
         """Add an AP profile for connecting to afterward."""
 
         iface = self._get_interface(obj['name'])
-        configuration = iface.configuration()
-        orig_profiles = configuration.networkProfiles()
-        orig_mutable_profiles = NSMutableOrderedSet.alloc().initWithOrderedSet_(orig_profiles)
-        ssid_bytes = str.encode(params.ssid)
-        ssid_data = NSData.dataWithBytes_length_(ssid_bytes, len(ssid_bytes))
-        profile = CWMutableNetworkProfile.alloc().init()
-        profile.setSsidData_(ssid_bytes)
-        profile.setSecurity_(4)
-        orig_mutable_profiles.addObject_(profile)
-        configuration.setNetworkProfiles_(orig_mutable_profiles)
-        result = iface.commitConfiguration_authorization_error_(configuration, None, None)
+        if iface is not None:
+            configuration = iface.configuration()
+            orig_profiles = configuration.networkProfiles()
+            orig_mutable_profiles = NSMutableOrderedSet.alloc().initWithOrderedSet_(orig_profiles)
+            ssid_bytes = str.encode(params.ssid.encode('utf-8'))
+            ssid_data = NSData.dataWithBytes_length_(ssid_bytes, len(ssid_bytes))
+            profile = CWMutableNetworkProfile.alloc().init()
+            profile.setSsidData_(ssid_data)
+            profile.setSecurity_(4)
+            orig_mutable_profiles.addObject_(profile)
+            configuration.setNetworkProfiles_(orig_mutable_profiles)
+            result = iface.commitConfiguration_authorization_error_(configuration, None, None)
 
         return params
 
@@ -143,15 +149,19 @@ class WifiUtil():
         """Remove all the AP profiles."""
 
         iface = self._get_interface(obj['name'])
-        configuration_copy = iface.configuration()
-        configuration_copy.setNetworkProfiles_(None)
-        result = iface.commitConfiguration_authorization_error_(configuration_copy, None, None)
+        if iface is not None:
+            configuration_copy = iface.configuration()
+            configuration_copy.setNetworkProfiles_(None)
+            result = iface.commitConfiguration_authorization_error_(configuration_copy, None, None)
 
     def status(self, obj):
         """Get the wifi interface status."""
 
         iface = self._get_interface(obj['name'])
-        return status_dict[iface.interfaceState()]
+        if iface is not None:
+            return status_dict[iface.interfaceState()]
+        else:
+            return None
 
     def interfaces(self):
         """Get the wifi interface lists."""
